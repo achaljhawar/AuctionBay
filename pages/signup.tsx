@@ -8,8 +8,15 @@ import Navbar from "@/components/Navbar";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState } from "react";
+import { Send,AlertCircle } from 'lucide-react';
+import {
+    Alert,
+    AlertDescription,
+    AlertTitle,
+  } from "@/components/ui/alert"
 
-const SignupPage = () => {
+  const SignupPage = () => {
     const AuthCredentialsValidator = z.object({
         email: z.string().email(),
         password: z.string().min(8, { message: "Password must be 8 characters long." })
@@ -21,6 +28,10 @@ const SignupPage = () => {
         resolver: zodResolver(AuthCredentialsValidator),
     });
 
+    const [showAlert, setShowAlert] = useState(false);
+    const [alruser, setalruser] = useState(false);
+    const [servererr, setservererr] = useState(false);
+    const [databaseerr, setdatabaseerr] = useState(false);
     const onSubmit = async (data: TAuthCredentialValidator) => {
         try {
             const response = await fetch("/api/signup", {
@@ -30,8 +41,27 @@ const SignupPage = () => {
                 },
                 body: JSON.stringify(data)
             });
-            const responseData = await response.json();
-            console.log(responseData);
+            if (response.status === 200) {
+                setShowAlert(true);
+                setalruser(false);
+                setservererr(false);
+                setdatabaseerr(false);
+            } else if (response.status === 400){
+                setalruser(true);
+                setShowAlert(false);
+                setservererr(false);
+                setdatabaseerr(false);
+            } else if (response.status === 500){
+                setservererr(true);
+                setShowAlert(false);
+                setalruser(false);
+                setdatabaseerr(false);
+            } else if (response.status === 501){
+                setdatabaseerr(true);
+                setShowAlert(false);
+                setalruser(false);
+                setservererr(false);
+            }
         } catch (error) {
             console.error(error);
         }
@@ -40,7 +70,7 @@ const SignupPage = () => {
     return (
         <>
             <Navbar />
-            <div className="container relative flex pt-20 flex-col items-center justify-center lg:px-0">
+            <div className="container relative flex pt-20 flex-col items-center justify-center lg:px-0 lg:mt-0">
                 <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
                     <div className="flex flex-col items-center space-y-2 text-center">
                         <Icons.logo className="h-20 w-20" />
@@ -81,6 +111,42 @@ const SignupPage = () => {
                                 <Button>Sign Up</Button>
                             </div>
                         </form>
+                        {showAlert && (
+                            <Alert>
+                                <Send className="w-4 h-4" />
+                                <AlertTitle>Heads up!</AlertTitle>
+                                <AlertDescription>
+                                    Check your email inbox for the verification link to activate your account.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {alruser && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>
+                                    This email is already registered.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {databaseerr && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>
+                                    Database Error
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {servererr && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>
+                                    Internal Server Error
+                                </AlertDescription>
+                            </Alert>
+                        )}
                     </div>
                 </div>
             </div>

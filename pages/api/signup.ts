@@ -83,7 +83,7 @@ export default async function handler(
     }
 
     if (userData && userData.length > 0) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "This email is already registered." });
     }
     const timestamp = new Date().toISOString();
 
@@ -98,7 +98,7 @@ export default async function handler(
       console.error(error);
       return res.status(500).json({ message: "Database Error" });
     }
-    return res.status(200).json({ message: "User registered successfully" });
+    return res.status(200).json({ message: "check your email address to verify your account." });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server Error" });
   }

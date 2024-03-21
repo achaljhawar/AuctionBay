@@ -86,30 +86,30 @@ import {
                     </div>
                     <div className="grid gap-6">
                         <form onSubmit={handleSubmit(onSubmit)}>
-                            <div className="grid gap-2">
-                                <div className="grid gap-1 py-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <Input
-                                        {...register("email")}
-                                        className={cn({
-                                            "focus-visible:text-blue-600": errors.email,
-                                        })}
-                                        placeholder="gavinbelson@hooli.com"
-                                    />
-                                </div>
-                                <div className="grid gap-1 py-2">
-                                    <Label htmlFor="password">Password</Label>
-                                    <Input
-                                        type="password"
-                                        {...register("password")}
-                                        className={cn({
-                                            "focus-visible:text-blue-600": errors.password,
-                                        })}
-                                        placeholder="Password"
-                                    />
-                                </div>
-                                <Button>Sign Up</Button>
+                        <div className="grid gap-2">
+                            <div className="grid gap-3 py-2">
+                                <Label htmlFor="email">
+                                    Email
+                                </Label>
+                                <Input
+                                    {...register("email")}
+                                    placeholder="gavinbelson@hooli.com"
+                                />
+                                {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
                             </div>
+                            <div className="grid gap-3 py-2">
+                                <Label htmlFor="password">
+                                    Password
+                                </Label>
+                            <Input
+                                type="password"
+                                {...register("password")}
+                                placeholder="Password"
+                            />
+                            {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+                            </div>
+                            <Button>Sign Up</Button>
+                        </div>
                         </form>
                         {showAlert && (
                             <Alert>

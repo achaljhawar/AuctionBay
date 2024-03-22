@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icons } from "./Icons";
 import { buttonVariants } from "./ui/button";
 import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
+import { parseJwt } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +16,43 @@ import {
 } from "@/components/ui/dialog";
 
 const Navbar = () => {
-  const user = null;
+  const [user, setUser] = useState(false);
+    useEffect(() => {
+      const token = sessionStorage.getItem('token') || "";
+      try {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const decoded = parseJwt(token)
+        if (decoded .exp < currentTime) {
+          console.log('Token has expired');
+          setUser(false);
+          sessionStorage.removeItem('token');
+        } else {
+          setUser(true);
+        }
+      } catch (error) {
+        console.log(error);
+        setUser(false)
+      }
+      
+    }, []);
+
+  const handleGoogleLogin = async () => {
+    try {
+      const response = await fetch("/api/callback/google", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        window.location.href = data.redirectUrl;
+      } else {
+        console.error("Error logging in with Google");
+      }
+    } catch (error) {
+      console.error("Error logging in with Google:", error);
+    }
+  };
+
   return (
     <div className="bg-white sticky z-50 top-0 inset-x-0 h-16">
       <header className="relative bg-white">
@@ -26,7 +64,16 @@ const Navbar = () => {
           </div>
           <div className="flex items-center">
             <div className="hidden lg:flex lg:items-center lg:space-x-6 mr-4">
-              {user ? null : (
+              {user ? (
+                <Button
+                  onClick={() => {
+                    window.location.href = "/dashboard";
+                  }}
+                  className="flex items-center justify-center gap-2"
+                >                  
+                  Dashboard
+                </Button>
+              ) : (
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="outline">Login</Button>
@@ -40,9 +87,7 @@ const Navbar = () => {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <Button
-                        onClick={() => {
-                            window.location.href = "/callback/google";
-                        }}
+                        onClick={handleGoogleLogin}
                         className="flex items-center justify-center gap-2"
                         variant="outline"
                       >
@@ -51,7 +96,7 @@ const Navbar = () => {
                       </Button>
                       <Button
                         onClick={() => {
-                            window.location.href = "/signin";
+                          window.location.href = "/login";
                         }}
                         variant="outline"
                         className="flex items-center justify-center gap-2"
@@ -63,9 +108,7 @@ const Navbar = () => {
                   </DialogContent>
                 </Dialog>
               )}
-              {user ? (
-                <p></p>
-              ) : (
+              {user ? null : (
                 <Link
                   href="/signup"
                   className={buttonVariants({ variant: "outline" })}

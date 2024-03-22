@@ -3,78 +3,145 @@ import axios from 'axios';
 import querystring from 'querystring';
 import jwt from 'jsonwebtoken';
 import { supabase } from "@/lib/supabase";
-import cookie from 'cookie';
+import { authcodecreator, generateEightDigitNumber } from "@/lib/utils"
+import { sha256 } from 'js-sha256';
+
+type ResponseData = {
+  token?: string;
+  error?: string;
+};
+
+const JWT_SECRET = process.env.JWT_SECRET || " ";
+const TOKEN_EXPIRATION_TIME = '6h';
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<ResponseData>
 ) {
-  const code = req.query.code as string;
-  const redirectURL = req.headers.referer; // Get the referring URL
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  const { code } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: 'Missing code parameter' });
+  }
 
   try {
-    const url = 'https://oauth2.googleapis.com/token';
-    const values = {
-      code,
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: process.env.PUBLIC_URL,
-      grant_type: 'authorization_code',
-    };
+    const { access_token, id_token } = await exchangeCodeForTokens(code);
+    const userInfo = await fetchUserInfo(access_token, id_token);
 
-    const response = await axios.post(
-      url,
-      querystring.stringify(values),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
-    );
+    const { email, picture } = userInfo;
 
-    const { id_token, access_token } = response.data;
-
-    interface GoogleUserInfo {
-      sub: string;
-      email: string;
-      name: string;
-      picture: string;
+    if (await checkExistingUser(email)) {
+      return res.status(400).json({ error: 'User already exists' });
     }
-
-    const { data: userInfo } = await axios.get<GoogleUserInfo>(
-      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
-      {
-        headers: {
-          Authorization: `Bearer ${id_token}`,
+    if (!await checkExistingGoogleUser(email)){
+      
+      await deleteUnverifiedUser(email);
+      const uniqueNumber = generateEightDigitNumber();
+      const hashedAuthCode = sha256(authcodecreator());
+      const timestamp = new Date().toISOString();
+  
+      const { error } = await supabase.from('auth-user').insert([
+        {
+          email,
+          id: uniqueNumber,
+          password: hashedAuthCode,
+          timestamp,
+          is3rdparty: true,
+          authcode: null,
         },
+      ]);
+      if (error) {
+        return res.status(500).json({ error: 'Internal Server Error' });
       }
-    );
-
-    const { picture, email } = userInfo;
-    const { data: userData, error: userError } = await supabase
-      .from("auth-user")
-      .select("*")
-      .eq("email", email)
-      .eq("isverified", true);
-
-    if (userData && userData.length > 0) {
-      return res.status(400).redirect(`/`);
+      const token = jwt.sign({ picture, email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_TIME });
+      return res.status(200).json({ token });
+    } else {
+      const token = jwt.sign({ picture, email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_TIME });
+      return res.status(200).json({ token });
     }
-
-    const token = jwt.sign({ picture, email }, 'mySecretKey', { expiresIn: '10m' });
-    res.setHeader(
-      'Set-Cookie',
-      cookie.serialize('auth', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV !== 'development',
-        maxAge: 60 * 10,
-        sameSite: 'strict',
-        path: '/',
-      })
-    );
-
-    res.status(200).redirect(`/dashboard`);
   } catch (error) {
-    console.log(error);
-    res.status(500).redirect(`/`);
+    console.error(error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+async function exchangeCodeForTokens(code: string) {
+  const url = 'https://oauth2.googleapis.com/token';
+  const values = {
+    code,
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    client_secret: process.env.GOOGLE_CLIENT_SECRET,
+    redirect_uri: process.env.PUBLIC_URL,
+    grant_type: 'authorization_code',
+  };
+
+  const response = await axios.post(url, querystring.stringify(values), {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
+
+  return {
+    access_token: response.data.access_token,
+    id_token: response.data.id_token,
+  };
+}
+
+interface GoogleUserInfo {
+  sub: string;
+  email: string;
+  name: string;
+  picture: string;
+}
+
+async function fetchUserInfo(accessToken: string, idToken: string) {
+  const { data: userInfo } = await axios.get<GoogleUserInfo>(
+    `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${accessToken}`,
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    }
+  );
+
+  return userInfo;
+}
+
+async function checkExistingUser(email: string) {
+  const { data: userData, error } = await supabase
+    .from("auth-user")
+    .select("*")
+    .eq("email", email)
+    .eq("isverified", true);
+
+  return userData && userData.length > 0;
+}
+
+async function checkExistingGoogleUser(email: string) {
+  const { data: userData, error } = await supabase
+    .from("auth-user")
+    .select("*")
+    .eq("email", email)
+    .is("isverified", null);
+
+  return userData && userData.length > 0;
+}
+async function deleteUnverifiedUser(email: string) {
+  try {
+    const { error } = await supabase
+      .from('auth-user')
+      .delete()
+      .eq("email", email)
+      .eq("isverified", false);
+
+    if (error) {
+      console.error('Error deleting unverified user:', error);
+    }
+  } catch (error) {
+    console.error('Error deleting unverified user:', error);
   }
 }

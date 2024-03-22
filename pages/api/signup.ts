@@ -4,6 +4,7 @@ import nodemailer from "nodemailer";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { sha256 } from "js-sha256";
+import { authcodecreator } from "@/lib/utils"
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -44,16 +45,6 @@ async function sendVerificationEmail(email: string, verifyUrl: string) {
   } catch (error) {
     console.error("Error sending verification email:", error);
   }
-}
-function authcodecreator(length = 8) {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-
-  return result;
 }
 export default async function handler(
   req: NextApiRequest,

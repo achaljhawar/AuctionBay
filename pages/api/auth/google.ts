@@ -4,9 +4,6 @@ import querystring from 'querystring';
 import jwt from 'jsonwebtoken';
 import { supabase } from "@/lib/supabase";
 import cookie from 'cookie';
-const mainurl = process.env.PUBLIC_URL || "";
-const client_id = process.env.GOOGLE_CLIENT_ID || "";
-const client_secret = process.env.GOOGLE_CLIENT_SECRET || "";
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -18,9 +15,9 @@ export default async function handler(
     const url = 'https://oauth2.googleapis.com/token';
     const values = {
       code,
-      client_id: client_id,
-      client_secret: client_secret,
-      redirect_uri: `${mainurl}auth/google/`,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.PUBLIC_URL,
       grant_type: 'authorization_code',
     };
 

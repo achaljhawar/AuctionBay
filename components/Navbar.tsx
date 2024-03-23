@@ -4,7 +4,6 @@ import { Icons } from "./Icons";
 import { buttonVariants } from "./ui/button";
 import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
-import { parseJwt } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -16,25 +15,32 @@ import {
 } from "@/components/ui/dialog";
 
 const Navbar = () => {
-  const [user, setUser] = useState(false);
-    useEffect(() => {
-      const token = sessionStorage.getItem('token') || "";
-      try {
-        const currentTime = Math.floor(Date.now() / 1000);
-        const decoded = parseJwt(token)
-        if (decoded .exp < currentTime) {
-          console.log('Token has expired');
-          setUser(false);
-          sessionStorage.removeItem('token');
-        } else {
-          setUser(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const verifyToken = async () => {
+      const token = sessionStorage.getItem("token");
+      if (token) {
+        try {
+          const response = await fetch("/api/auth/verify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          setIsAuthenticated(response.ok);
+        } catch (error) {
+          console.error("Error verifying token:", error);
+          setIsAuthenticated(false);
         }
-      } catch (error) {
-        console.log(error);
-        setUser(false)
+      } else {
+        setIsAuthenticated(false);
       }
-      
-    }, []);
+    };
+
+    verifyToken();
+  }, []);
 
   const handleGoogleLogin = async () => {
     try {
@@ -54,7 +60,7 @@ const Navbar = () => {
   };
 
   return (
-    <div className="bg-white sticky z-50 top-0 inset-x-0 h-16">
+    <div className="bg-white sticky top-0 left-0 right-0 z-50 h-16">
       <header className="relative bg-white">
         <div className="flex h-16 items-center justify-between">
           <div className="lg:ml-0.5">
@@ -64,13 +70,13 @@ const Navbar = () => {
           </div>
           <div className="flex items-center">
             <div className="hidden lg:flex lg:items-center lg:space-x-6 mr-4">
-              {user ? (
+              {isAuthenticated ? (
                 <Button
                   onClick={() => {
                     window.location.href = "/dashboard";
                   }}
                   className="flex items-center justify-center gap-2"
-                >                  
+                >
                   Dashboard
                 </Button>
               ) : (
@@ -108,13 +114,12 @@ const Navbar = () => {
                   </DialogContent>
                 </Dialog>
               )}
-              {user ? null : (
+              {!isAuthenticated && (
                 <Link
                   href="/signup"
                   className={buttonVariants({ variant: "outline" })}
                 >
-                  {" "}
-                  Create account{" "}
+                  Create account
                 </Link>
               )}
             </div>

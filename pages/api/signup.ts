@@ -79,7 +79,7 @@ export default async function handler(
     const timestamp = new Date().toISOString();
 
     const authcode = authcodecreator(8);
-    const verifyurl = `http://localhost:3000/verify?email=${email}&authcode=${authcode}`;
+    const verifyurl = `${process.env.VERIFY_URL}?email=${email}&authcode=${authcode}`;
     const hashedPassword = sha256(password).toString();
     const { data, error } = await supabase.from("auth-user").insert([
       { email: email, password: hashedPassword, timestamp: timestamp, authcode: authcode }

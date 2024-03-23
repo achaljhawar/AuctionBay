@@ -24,6 +24,8 @@ export default async function handler(
         const decoded = parseJwt(token);
         const password = decoded.hashedPassword;
         const email = decoded.email;
+        const currentTime = Math.floor(Date.now() / 1000);
+        const tokenexpiry = decoded.exp;
         const { data: userData, error: userError } = await supabase
           .from("auth-user")
           .select("*")
@@ -31,7 +33,7 @@ export default async function handler(
           .eq("password", password);
         if (userError) {
             return res.status(500).json({ message: "Database Error" }); 
-        } else if (userData && userData.length > 0){
+        } else if (userData && userData.length > 0 && tokenexpiry > currentTime){
             return res.status(200).json({ message: "User Verified" });
         } else {
             return res.status(401).json({ message: "Unauthorized" });

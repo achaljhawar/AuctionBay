@@ -55,40 +55,62 @@ export default async function handler(
         },
       ]);
       if (error) {
+        console.error('Error inserting user:', error);
         return res.status(500).json({ error: 'Internal Server Error' });
       }
-      const token = jwt.sign({ picture, email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_TIME });
+      const token = jwt.sign({ hashedAuthCode , picture , email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_TIME });
       return res.status(200).json({ token });
     } else {
-      const token = jwt.sign({ picture, email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_TIME });
-      return res.status(200).json({ token });
+      const { data: userdata, error } = await supabase
+      .from("auth-user")
+      .select("*")
+      .eq("email", email)
+      
+      if (error) {
+        console.error('Error fetching user data:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
+      
+      let hashedPassword = null;
+      if (userdata && userdata.length > 0){
+        hashedPassword = userdata[0].password;
+        const token = jwt.sign({ picture, hashedPassword ,email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_TIME });
+        return res.status(200).json({ token });
+      } else {
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }      
     }
   } catch (error) {
-    console.error(error);
+    console.error('Error:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
 async function exchangeCodeForTokens(code: string) {
-  const url = 'https://oauth2.googleapis.com/token';
-  const values = {
-    code,
-    client_id: process.env.GOOGLE_CLIENT_ID,
-    client_secret: process.env.GOOGLE_CLIENT_SECRET,
-    redirect_uri: process.env.PUBLIC_URL,
-    grant_type: 'authorization_code',
-  };
+  try {
+    const url = 'https://oauth2.googleapis.com/token';
+    const values = {
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: process.env.PUBLIC_URL,
+      grant_type: 'authorization_code',
+    };
 
-  const response = await axios.post(url, querystring.stringify(values), {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-  });
+    const response = await axios.post(url, querystring.stringify(values), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
 
-  return {
-    access_token: response.data.access_token,
-    id_token: response.data.id_token,
-  };
+    return {
+      access_token: response.data.access_token,
+      id_token: response.data.id_token,
+    };
+  } catch (error) {
+    console.error('Error exchanging code for tokens:', error);
+    throw error;
+  }
 }
 
 interface GoogleUserInfo {
@@ -99,37 +121,63 @@ interface GoogleUserInfo {
 }
 
 async function fetchUserInfo(accessToken: string, idToken: string) {
-  const { data: userInfo } = await axios.get<GoogleUserInfo>(
-    `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${accessToken}`,
-    {
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-      },
-    }
-  );
+  try {
+    const { data: userInfo } = await axios.get<GoogleUserInfo>(
+      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${accessToken}`,
+      {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      }
+    );
 
-  return userInfo;
+    return userInfo;
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    throw error;
+  }
 }
 
 async function checkExistingUser(email: string) {
-  const { data: userData, error } = await supabase
-    .from("auth-user")
-    .select("*")
-    .eq("email", email)
-    .eq("isverified", true);
+  try {
+    const { data: userData, error } = await supabase
+      .from("auth-user")
+      .select("*")
+      .eq("email", email)
+      .eq("isverified", true);
 
-  return userData && userData.length > 0;
+    if (error) {
+      console.error('Error checking existing user:', error);
+      throw error;
+    }
+
+    return userData && userData.length > 0;
+  } catch (error) {
+    console.error('Error checking existing user:', error);
+    throw error;
+  }
 }
 
 async function checkExistingGoogleUser(email: string) {
-  const { data: userData, error } = await supabase
-    .from("auth-user")
-    .select("*")
-    .eq("email", email)
-    .is("isverified", null);
+  try {
+    const { data: userData, error } = await supabase
+      .from("auth-user")
+      .select("*")
+      .eq("email", email)
+      .is("isverified", null);
 
-  return userData && userData.length > 0;
+    if (error) {
+      console.error('Error checking existing Google user:', error);
+      throw error;
+    }
+
+    return userData && userData.length > 0;
+  } catch (error) {
+    console.error('Error checking existing Google user:', error);
+    throw error;
+  }
 }
+
 async function deleteUnverifiedUser(email: string) {
   try {
     const { error } = await supabase
@@ -140,8 +188,10 @@ async function deleteUnverifiedUser(email: string) {
 
     if (error) {
       console.error('Error deleting unverified user:', error);
+      throw error;
     }
   } catch (error) {
     console.error('Error deleting unverified user:', error);
+    throw error;
   }
 }

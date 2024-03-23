@@ -51,7 +51,7 @@ export default async function handler(
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ email }, JWT_SECRET, {
+    const token = jwt.sign({ email, hashedPassword }, JWT_SECRET, {
       expiresIn: TOKEN_EXPIRATION_TIME,
     });
 

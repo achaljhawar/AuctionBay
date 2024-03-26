@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { sha256 } from "js-sha256";
-import { authcodecreator } from "@/lib/utils"
+import { authcodecreator, generateEightDigitNumber } from "@/lib/utils"
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -82,7 +82,7 @@ export default async function handler(
     const verifyurl = `${process.env.VERIFY_URL}?email=${email}&authcode=${authcode}`;
     const hashedPassword = sha256(password).toString();
     const { data, error } = await supabase.from("auth-user").insert([
-      { email: email, password: hashedPassword, timestamp: timestamp, authcode: authcode }
+      { email: email, password: hashedPassword, timestamp: timestamp, authcode: authcode , id : generateEightDigitNumber()}
     ]);
     sendVerificationEmail(email, verifyurl);
     if (error) {

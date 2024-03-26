@@ -1,19 +1,49 @@
-import { useEffect, useState } from "react";
-import MaxWidthWrapper from "@/components/maxwidwrap";
-import { Button, buttonVariants } from "@/components/ui/button";
-import Link from 'next/link'
-import Image from "next/image";
-import Navbar from '@/components/Navbar'
-import withAuth from '@/components/withAuth';
-interface dashboardprops {}
+import { useEffect } from "react";
+import Navbar from "@/components/Navbar";
+import { useRouter } from "next/router";
+import withAuth from "@/components/withAuth";
 
-const dashboard: React.FC<dashboardprops> = () => {
- return (
+interface DashboardProps {}
+
+const Dashboard: React.FC<DashboardProps> = () => {
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      const token = sessionStorage.getItem("token");
+
+      if (!token) {
+        router.push("/newuser");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/auth/fetchuserdetails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          router.push("/newuser");
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+        router.push("/newuser");
+      }
+    };
+
+    fetchUserDetails();
+  }, [router]);
+
+  return (
     <>
-    <Navbar/>
-    <h1>hello</h1>
+      <Navbar />
+      <h1>Dashboard</h1>
     </>
- );
+  );
 };
 
-export default withAuth(dashboard);
+export default withAuth(Dashboard);

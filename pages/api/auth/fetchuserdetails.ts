@@ -17,15 +17,16 @@ export default async function handler(
     if (req.method !== 'POST') {
       return res.status(405).json({ message: 'Method Not Allowed' });
     }
+
     // Check if the Authorization header is present and valid
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ message: 'Invalid token', error: 'Invalid token' });
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
     const [scheme, token] = authHeader.split(' ');
     if (scheme !== 'Bearer' || !token) {
-      return res.status(401).json({ message: 'Invalid token', error: 'Invalid token' });
+      return res.status(401).json({ message: 'Invalid token format' });
     }
 
     // Parse the JWT token
@@ -33,35 +34,34 @@ export default async function handler(
 
     // Check if the decoded token is valid
     if (!decoded) {
-      return res.status(401).json({ message: 'Invalid token', error: 'Invalid token' });
+      return res.status(401).json({ message: 'Invalid token' });
     }
 
-    const { hashedPassword, email, exp } = decoded;
+    const { email, exp } = decoded;
     const currentTime = Math.floor(Date.now() / 1000);
 
     // Check if the token has expired
     if (exp < currentTime) {
-      return res.status(401).json({ message: 'Token expired', error: 'Token expired' });
+      return res.status(401).json({ message: 'Token expired' });
     }
 
     // Fetch user data from the database
     const { data: userData, error: userError } = await supabase
-      .from('auth-user')
+      .from('user-details')
       .select('*')
       .eq('email', email)
-      .eq('password', hashedPassword)
       .single();
 
     if (userError) {
       console.error('Database Error:', userError);
-      return res.status(500).json({ message: 'Database Error' });
+      return res.status(500).json({ message: 'Internal Server Error' });
     }
 
     // Check if user data is valid
     if (userData) {
-      return res.status(200).json({ message: 'User Verified' });
+      return res.status(200).json({ message: 'User data found' });
     } else {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(404).json({ message: 'User not found' });
     }
   } catch (error) {
     console.error('Internal Server Error:', error);

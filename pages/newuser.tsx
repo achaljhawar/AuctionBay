@@ -49,10 +49,21 @@ const formSchema = z.object({
     .max(5, { message: "You can add up to 5 shipping addresses" }),
 });
 
-export function ProfileForm() {
+const ProfileForm = () => {
   const router = useRouter();
   const [profileImage, setProfileImage] = useState("");
   const [hasdetails, setdetails] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      shareEmail: false,
+      upiId: "",
+      shippingAddresses: [{ address: "" }],
+    },
+  });
 
   useEffect(() => {
     const checkauthdetails = async () => {
@@ -78,23 +89,6 @@ export function ProfileForm() {
 
     checkauthdetails();
   }, []);
-
-  // If hasdetails is true, redirect to /dashboard
-  if (hasdetails) {
-    router.replace("/dashboard");
-    return null;
-  }
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      shareEmail: false,
-      upiId: "",
-      shippingAddresses: [{ address: "" }],
-    },
-  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const formData = {
@@ -133,36 +127,13 @@ export function ProfileForm() {
       toast.error(message || "An error occurred. Please try again.");
     } 
   }
-  useEffect(() => {
-    const checkauthdetails = async () => {
-      const token = sessionStorage.getItem("token");
-      if (token) {
-        try {
-          const response = await fetch("/api/auth/fetchuserdetails", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          setdetails(response.ok);
-        } catch (error) {
-          console.error("Error verifying token:", error);
-          setdetails(false);
-        }
-      } else {
-        setdetails(false);
-      }
-    };
-  
-    checkauthdetails();
-  }, []);
-  
+
   // If hasdetails is true, redirect to /dashboard
   if (hasdetails) {
     router.replace("/dashboard");
     return null;
   }
+
   return (
     <div className="flex-col min-h-screen items-stretch w-full justify-center">
       <Toaster richColors  />
@@ -326,4 +297,5 @@ export function ProfileForm() {
     </div>
   );
 }
+
 export default withAuth(ProfileForm);

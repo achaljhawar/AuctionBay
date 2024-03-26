@@ -9,7 +9,11 @@ import { toast } from "react-hot-toast";
 
 const EditAvatar = forwardRef(
   (
-    props: {
+    {
+      className,
+      profileImage,
+      setProfileImage,
+    }: {
       className: string;
       profileImage: string;
       setProfileImage: Dispatch<SetStateAction<string>>;
@@ -22,9 +26,9 @@ const EditAvatar = forwardRef(
       onClientUploadComplete: (res) => {
         const file = res ? res[0] : undefined;
         if (file) {
-          props.setProfileImage(file.url);
-          console.log(file.url)
-          console.log("profileImage", props.profileImage);
+          setProfileImage(file.url); // Use setProfileImage directly
+          console.log(file.url);
+          console.log("profileImage", profileImage); // Use profileImage directly
         }
         setIsUploading(false);
         return null;
@@ -65,7 +69,7 @@ const EditAvatar = forwardRef(
           ref={ref}
           className={cn(
             "flex cursor-pointer items-center justify-center",
-            props.className,
+            className,
             isUploading ? "opacity-50 cursor-default" : ""
           )}
         >
@@ -79,5 +83,7 @@ const EditAvatar = forwardRef(
     );
   }
 );
+
+EditAvatar.displayName = "EditAvatar";
 
 export default EditAvatar;

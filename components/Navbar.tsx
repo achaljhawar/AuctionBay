@@ -4,6 +4,7 @@ import { Icons } from "./Icons";
 import { buttonVariants } from "./ui/button";
 import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -15,27 +16,33 @@ import {
 } from "@/components/ui/dialog";
 
 const Navbar = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userData, setUserData] = useState<{
+    lastname: string;
+    firstname: string;
+    avatar_url: string;
+    id: string;
+  } | null>(null);
 
   useEffect(() => {
     const verifyToken = async () => {
       const token = sessionStorage.getItem("token");
       if (token) {
         try {
-          const response = await fetch("/api/auth/verify", {
+          const response = await fetch("/api/auth/fetchuserdetails", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
           });
-          setIsAuthenticated(response.ok);
+          const resdata = await response.json();
+          setUserData(resdata);
         } catch (error) {
           console.error("Error verifying token:", error);
-          setIsAuthenticated(false);
+          setUserData(null);
         }
       } else {
-        setIsAuthenticated(false);
+        setUserData(null);
       }
     };
 
@@ -68,17 +75,36 @@ const Navbar = () => {
               <Icons.logo className="h-20 w-20" />
             </Link>
           </div>
+          {userData ? (<div className="flex flex-1 gap-2 items-center self-stretch justify-center">
+            <Button
+              onClick={() => {
+                window.location.href = "/dashboard";
+              }}
+              className="flex items-center justify-center gap-2 mr-4"
+            >
+              Dashboard
+            </Button>
+          </div>) : null}
+
           <div className="flex items-center">
-            <div className="hidden lg:flex lg:items-center lg:space-x-6 mr-4">
-              {isAuthenticated ? (
-                <Button
-                  onClick={() => {
-                    window.location.href = "/dashboard";
-                  }}
-                  className="flex items-center justify-center gap-2"
-                >
-                  Dashboard
-                </Button>
+            <div className="flex items-center space-x-6 mr-4">
+              {userData ? (
+                <div className="flex items-center">
+
+                  <div className="flex items-center space-x-1">
+                    <Avatar>
+                      <AvatarImage
+                        src={userData?.avatar_url ?? "No user data"}
+                        alt="@shadcn"
+                      />
+                      <AvatarFallback>CN</AvatarFallback>
+                    </Avatar>
+                    <Button variant="link">
+                      @{userData?.firstname ?? "No user data"}{" "}
+                      {userData?.lastname ?? "No user data"}
+                    </Button>
+                  </div>
+                </div>
               ) : (
                 <Dialog>
                   <DialogTrigger asChild>
@@ -114,7 +140,7 @@ const Navbar = () => {
                   </DialogContent>
                 </Dialog>
               )}
-              {!isAuthenticated && (
+              {!userData && (
                 <Link
                   href="/signup"
                   className={buttonVariants({ variant: "outline" })}

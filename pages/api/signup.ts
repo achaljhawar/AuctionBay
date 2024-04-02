@@ -82,7 +82,7 @@ export default async function handler(
     const verifyurl = `${process.env.VERIFY_URL}?email=${email}&authcode=${authcode}`;
     const hashedPassword = sha256(password).toString();
     const { data, error } = await supabase.from("auth-user").insert([
-      { email: email, password: hashedPassword, timestamp: timestamp, authcode: authcode , id : generateEightDigitNumber()}
+      { email: email, password: hashedPassword, timestamp: timestamp, authcode: authcode , id : generateEightDigitNumber() ,isverified : false}
     ]);
     sendVerificationEmail(email, verifyurl);
     if (error) {

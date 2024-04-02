@@ -58,8 +58,9 @@ export default async function handler(
     }
 
     // Check if user data is valid
+    console.log(userData)
     if (userData) {
-      return res.status(200).json({ message: 'User data found' });
+      return res.status(200).json(userData);
     } else {
       return res.status(404).json({ message: 'User not found' });
     }

@@ -23,37 +23,57 @@ export default async function handler(
       return res.status(400).json({ message: "Missing required parameters" });
     }
 
-    // Check if the chatroom already exists
-    const { data: chatroom, error: userError } = await supabase
-      .from("messages")
+    // Check if the chatroom already exists with the provided order of user IDs
+    const { data: chatroom1, error: error1 } = await supabase
+      .from("chatrooms")
       .select("*")
-      .or(
-        `(user_id_1.eq.${firstID},user_id_2.eq.${secondID}), (user_id_1.eq.${secondID},user_id_2.eq.${firstID})`
-      );
+      .eq("user_id_1", firstID)
+      .eq("user_id_2", secondID);
 
-    if (userError) {
-      console.error(userError);
+    if (error1) {
+      console.error("Error fetching chatroom1:", error1);
       return res.status(500).json({ message: "Database Error" });
     }
 
-    if (chatroom) {
-      return res.status(200).json({ data: chatroom });
-    } else {
-      // Create a new chatroom
-      const { data, error } = await supabase
-        .from("messages")
-        .insert([
-          { user_id_1: firstID, user_id_2: secondID },
-        ])
-        .single();
-
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ message: "Database Error" });
-      }
-
-      return res.status(200).json({ data });
+    if (chatroom1 && chatroom1.length > 0) {
+      // Found a chatroom with the given user IDs
+      return res.status(200).json({ data: chatroom1 });
     }
+
+    // Check if the chatroom exists with the reversed order of user IDs
+    const { data: chatroom2, error: error2 } = await supabase
+      .from("chatrooms")
+      .select("*")
+      .eq("user_id_1", secondID)
+      .eq("user_id_2", firstID);
+
+    if (error2) {
+      console.error("Error fetching chatroom2:", error2);
+      return res.status(500).json({ message: "Database Error" });
+    }
+
+    if (chatroom2 && chatroom2.length > 0) {
+      // Found a chatroom with the reversed user IDs
+      return res.status(200).json({ data: chatroom2 });
+    }
+
+    // No existing chatroom found, create a new one
+    const { data, error } = await supabase
+      .from("chatrooms")
+      .insert([
+        {
+          user_id_1: firstID,
+          user_id_2: secondID,
+        },
+      ])
+      .single();
+
+    if (error) {
+      console.error("Error creating chatroom:", error);
+      return res.status(500).json({ message: "Database Error" });
+    }
+
+    return res.status(200).json({ data });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });

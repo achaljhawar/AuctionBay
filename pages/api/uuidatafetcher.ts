@@ -26,7 +26,7 @@ export default async function handler(
     if (userData && userData.length > 0) {
       return res.status(200).json(userData);
     }
-    return res.status(400).json({ message: "this email exists" });
+    return res.status(400).json({ message: "this user doesn't exist" });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server Error" });
   }

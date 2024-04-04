@@ -24,20 +24,43 @@ export default async function handler(
     }
 
     // Check if the chatroom already exists
-    const { data: chatroom, error: userError } = await supabase
-      .from("messages")
+    const { data: chatroom1, error: error1 } = await supabase
+      .from("chatrooms")
       .select("*")
-      .or(
-        `(user_id_1.eq.${firstID},user_id_2.eq.${secondID}), (user_id_1.eq.${secondID},user_id_2.eq.${firstID})`
-      );
+      .eq("user_id_1", firstID)
+      .eq("user_id_2", secondID);
 
-    if (userError) {
-      console.error(userError);
+    if (error1) {
+      console.error("Error fetching chatroom1:", error1);
       return res.status(500).json({ message: "Database Error" });
     }
 
-    // Return the chatroom data or an empty array if no chatroom exists
-    return res.status(200).json({ data: chatroom || [] });
+    if (chatroom1 && chatroom1.length > 0) {
+      // Found a chatroom with the given user IDs
+      const chatroom = chatroom1[0];
+      return res.status(200).json({ data: chatroom });
+    }
+
+    // No chatroom found with the given user IDs in the first query
+    const { data: chatroom2, error: error2 } = await supabase
+      .from("chatrooms")
+      .select("*")
+      .eq("user_id_1", secondID)
+      .eq("user_id_2", firstID);
+
+    if (error2) {
+      console.error("Error fetching chatroom2:", error2);
+      return res.status(500).json({ message: "Database Error" });
+    }
+
+    if (chatroom2 && chatroom2.length > 0) {
+      // Found a chatroom with the reversed user IDs
+      const chatroom = chatroom2[0];
+      return res.status(200).json({ data: chatroom });
+    }
+
+    // No chatroom found with either combination of user IDs
+    return res.status(404).json({ message: "Chatroom not found" });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });

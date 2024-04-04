@@ -74,7 +74,8 @@ export default async function handler(
       let hashedPassword = null;
       if (userdata && userdata.length > 0){
         hashedPassword = userdata[0].password;
-        const token = jwt.sign({ picture, hashedPassword ,email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_TIME });
+        const id = userdata[0].id;
+        const token = jwt.sign({ id,picture, hashedPassword ,email }, JWT_SECRET, { expiresIn: TOKEN_EXPIRATION_TIME });
         return res.status(200).json({ token });
       } else {
         return res.status(500).json({ error: 'Internal Server Error' });

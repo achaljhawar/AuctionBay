@@ -1,18 +1,18 @@
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-type Message = {
-  id: bigint;
-  createdAt: Date;
-  chatroomId: string;
-  senderId: bigint;
-  text: string;
+type chatroom = {
+  created_at: Date;
+  chatroom_id: bigint;
+  user_id_1: bigint;
+  user_id_2: bigint;
+
 };
 
-export default function RealtimeMessages({
-  serverPosts,
+export default function RealtimeChatrooms({
+  chatrooms,
 }: {
-  serverPosts: Message[];
+  chatrooms: chatroom[];
 }) {
   useEffect(() => {
     const channel = supabase
@@ -35,5 +35,5 @@ export default function RealtimeMessages({
     };
   }, [supabase]);
 
-  return <pre>{JSON.stringify(serverPosts, null, 2)}</pre>;
+  return <pre>{JSON.stringify(chatrooms, null, 2)}</pre>;
 }

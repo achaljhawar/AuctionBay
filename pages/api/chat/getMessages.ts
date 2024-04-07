@@ -18,24 +18,35 @@ export default async function handler(
     if (req.method !== 'POST') {
       return res.status(405).json({ message: 'Method Not Allowed' });
     }
-    const {chatroom_id} = req.body;
+
+    const { chatroom_id } = req.body;
     // Check if the chatroom_id is provided
     if (!chatroom_id) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
-    let { data: messages, error } = await supabase
+
+    // Fetch messages from the database
+    const { data: messages, error } = await supabase
       .from('messages')
-      .select("*")
-      .eq('chatroom_id', chatroom_id)
+      .select('*')
+      .eq('chatroom_id', chatroom_id);
+
+    // Handle errors
     if (error) {
-      return res.status(500).json({ message: 'Error fetching messages', error: error.message });
+      console.error('Error fetching messages:', error);
+      return res.status(500).json({
+        message: 'Error fetching messages',
+        error: error.message,
+      });
     }
-    
-    if (messages) {
-      return res.status(200).json({ message: 'Messages fetched successfully', data: messages });
-    }
-    
-    return res.status(404).json({ message: 'No messages found' });
+
+    // Handle empty response
+
+    // Return the fetched messages
+    return res.status(200).json({
+      message: 'Messages fetched successfully',
+      data: messages,
+    });
   } catch (error) {
     console.error('Internal Server Error:', error);
     return res.status(500).json({ message: 'Internal Server Error' });

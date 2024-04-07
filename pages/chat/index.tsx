@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import RealtimeMessages from '@/components/realtime-messages';
+import RealtimeChatrooms from '@/components/realtime-chatrooms';
 
 interface User {
   id: string;
-  // Add other properties of the user object here
 }
 
 interface ChatRoom {
-  id: bigint;
-  createdAt: Date;
-  chatroomId: string;
-  senderId: bigint; // Changed to bigint
-  text: string;
-  // Add other properties of the chat room object here
+  created_at: Date;
+  chatroom_id: bigint;
+  user_id_1: bigint;
+  user_id_2: bigint;
+
 }
 
 export default function Page() {
@@ -46,13 +44,6 @@ export default function Page() {
     return <div>Loading...</div>;
   }
 
-  return <RealtimeMessages serverPosts={data ?? []} />;
+  return <RealtimeChatrooms chatrooms={data ?? []} />;
 }
 
-type Message = {
-  id: bigint;
-  createdAt: Date;
-  chatroomId: string;
-  senderId: bigint; // Changed to bigint
-  text: string;
-}

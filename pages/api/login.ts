@@ -46,13 +46,13 @@ export default async function handler(
 
     const hashedPassword = sha256(password).toString();
     const isPasswordValid = userData[0].password === hashedPassword;
-    const userid = userData[0].id;
+    const id = userData[0].id;
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const token = jwt.sign({ userid ,email, hashedPassword }, JWT_SECRET, {
+    const token = jwt.sign({ id ,email, hashedPassword }, JWT_SECRET, {
       expiresIn: TOKEN_EXPIRATION_TIME,
     });
 

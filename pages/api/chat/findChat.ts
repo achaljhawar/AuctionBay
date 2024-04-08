@@ -1,10 +1,12 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
-import type { NextApiRequest, NextApiResponse } from "next";
-import { supabase } from "@/lib/supabase";
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { supabase } from '@/lib/supabase';
+import { parseJwt } from '@/lib/utils';
 
 type Data = {
-  message?: string;
+  message: string;
   data?: any;
+  error?: string;
 };
 
 export default async function handler(
@@ -12,57 +14,53 @@ export default async function handler(
   res: NextApiResponse<Data>
 ) {
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ message: "Method Not Allowed" });
+    if (req.method !== 'POST') {
+      return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    const { firstID, secondID } = req.body;
-
-    // Check if firstID and secondID are provided
-    if (!firstID || !secondID) {
-      return res.status(400).json({ message: "Missing required parameters" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // Check if the chatroom already exists
-    const { data: chatroom1, error: error1 } = await supabase
-      .from("chatrooms")
-      .select("*")
-      .eq("user_id_1", firstID)
-      .eq("user_id_2", secondID);
-
-    if (error1) {
-      console.error("Error fetching chatroom1:", error1);
-      return res.status(500).json({ message: "Database Error" });
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme !== 'Bearer' || !token) {
+      return res.status(401).json({ message: 'Invalid token format' });
     }
 
-    if (chatroom1 && chatroom1.length > 0) {
-      // Found a chatroom with the given user IDs
-      const chatroom = chatroom1[0];
-      return res.status(200).json({ data: chatroom });
+    const decoded = parseJwt(token);
+    if (!decoded) {
+      return res.status(401).json({ message: 'Invalid token' });
     }
 
-    // No chatroom found with the given user IDs in the first query
-    const { data: chatroom2, error: error2 } = await supabase
-      .from("chatrooms")
-      .select("*")
-      .eq("user_id_1", secondID)
-      .eq("user_id_2", firstID);
+    const { id: userId, exp } = decoded;
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (exp < currentTime) {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    const { chatroom_id } = req.body;
 
-    if (error2) {
-      console.error("Error fetching chatroom2:", error2);
-      return res.status(500).json({ message: "Database Error" });
+    let { data: chatrooms, error } = await supabase
+      .from('chatrooms')
+      .select('*')
+      .eq('chatroom_id', chatroom_id);
+    if (error) {
+      console.error('Error fetching chatroom:', error);
+      return res.status(500).json({ message: 'Internal Server Error' });
     }
 
-    if (chatroom2 && chatroom2.length > 0) {
-      // Found a chatroom with the reversed user IDs
-      const chatroom = chatroom2[0];
-      return res.status(200).json({ data: chatroom });
+    if (!(chatrooms && chatrooms.length > 0)) {
+      return res.status(404).json({ message: 'this chatroom does not exist' });
     }
-
-    // No chatroom found with either combination of user IDs
-    return res.status(404).json({ message: "Chatroom not found" });
+    console.log('chatrooms:', userId);
+    console.log('userId:', chatrooms[0].user_id_1);
+    if (chatrooms[0].user_id_1 !== userId && chatrooms[0].user_id_2 !== userId) {
+      
+      return res.status(403).json({ message: 'Unauthorized 2' });
+    }
+    return res.status(200).json({ message: 'Chatroom found' });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error('Internal Server Error:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 }

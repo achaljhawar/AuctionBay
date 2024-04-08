@@ -33,7 +33,7 @@ export default async function handler(
       return res.status(401).json({ message: 'Invalid token' });
     }
 
-    const { userid: userId, exp } = decoded;
+    const { id: userId, exp } = decoded;
     const currentTime = Math.floor(Date.now() / 1000);
     if (exp < currentTime) {
       return res.status(401).json({ message: 'Token expired' });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import RealtimeChatrooms from '@/components/realtime-chatrooms';
-
+import withAuth from '@/components/withAuth';
 interface User {
   id: string;
 }
@@ -12,8 +12,9 @@ interface ChatRoom {
   user_id_2: bigint;
 
 }
+interface chatprops {}
 
-export default function Page() {
+const Page: React.FC<chatprops> = () => {
   const [data, setData] = useState<ChatRoom[] | null>(null);
 
   useEffect(() => {
@@ -47,3 +48,4 @@ export default function Page() {
   return <RealtimeChatrooms chatrooms={data ?? []} />;
 }
 
+export default withAuth(Page);

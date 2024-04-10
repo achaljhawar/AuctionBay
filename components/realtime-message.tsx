@@ -20,7 +20,6 @@ export default function RealtimeMessages({ messages, chatroom_id }: { messages: 
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
-          // Update the state with the new message
           setAllMessages((prevMessages) => [...prevMessages, payload.new as Message]);
         }
       )

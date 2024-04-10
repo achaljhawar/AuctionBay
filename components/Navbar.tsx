@@ -76,13 +76,32 @@ const Navbar = () => {
             </Link>
           </div>
           {userData ? (<div className="flex flex-1 gap-2 items-center self-stretch justify-center">
+          <Button
+              variant="link"
+              onClick={() => {
+                window.location.href = "/";
+              }}
+              className="flex items-center justify-center gap-2 mr-4"
+            >
+              My Auctions
+            </Button>
             <Button
+              variant="link"
               onClick={() => {
                 window.location.href = "/dashboard";
               }}
               className="flex items-center justify-center gap-2 mr-4"
             >
               Dashboard
+            </Button>
+            <Button
+              variant="link"
+              onClick={() => {
+                window.location.href = "/chat";
+              }}
+              className="flex items-center justify-center gap-2 mr-4"
+            >
+              Chat
             </Button>
           </div>) : null}
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import RealtimeChatrooms from '@/components/realtime-chatrooms';
 import withAuth from '@/components/withAuth';
+import hasDetails from '@/components/hasDetails';
 interface User {
   id: string;
 }
@@ -16,7 +17,6 @@ interface chatprops {}
 
 const Page: React.FC<chatprops> = () => {
   const [data, setData] = useState<ChatRoom[] | null>(null);
-
   useEffect(() => {
     const fetchData = async () => {
       const token = sessionStorage.getItem('token');
@@ -48,4 +48,4 @@ const Page: React.FC<chatprops> = () => {
   return <RealtimeChatrooms chatrooms={data ?? []} />;
 }
 
-export default withAuth(Page);
+export default hasDetails(withAuth(Page));

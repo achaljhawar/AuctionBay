@@ -2,16 +2,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { parseJwt } from '@/lib/utils';
+import { redis } from '@/lib/redis'; // Import the Redis client
 
-type Data = {
-  message: string;
-  error?: string;
-};
+type Data = { message: string; data?: any; error?: string };
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<Data>
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   try {
     // Check if the request method is POST
     if (req.method !== 'POST') {
@@ -31,8 +26,6 @@ export default async function handler(
 
     // Parse the JWT token
     const decoded = parseJwt(token);
-
-    // Check if the decoded token is valid
     if (!decoded) {
       return res.status(401).json({ message: 'Invalid token' });
     }
@@ -45,21 +38,23 @@ export default async function handler(
       return res.status(401).json({ message: 'Token expired' });
     }
 
+    // Check if the user data is available in the Redis cache
+    const cachedUserData = await redis.get(`user_${email}`);
+    if (cachedUserData) {
+      return res.status(200).json(JSON.parse(cachedUserData));
+    }
+
     // Fetch user data from the database
-    const { data: userData, error: userError } = await supabase
-      .from('user-details')
-      .select('*')
-      .eq('email', email)
-      .single();
+    const { data: userData, error: userError } = await supabase.from('user-details').select('*').eq('email', email).single();
 
     if (userError) {
       console.error('Database Error:', userError);
       return res.status(500).json({ message: 'Internal Server Error' });
     }
 
-    // Check if user data is valid
-    console.log(userData)
+    // Cache the user data in Redis
     if (userData) {
+      await redis.set(`user_${email}`, JSON.stringify(userData), 'EX', 60 * 60); // Cache for 1 hour
       return res.status(200).json(userData);
     } else {
       return res.status(404).json({ message: 'User not found' });

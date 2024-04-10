@@ -103,6 +103,15 @@ const Navbar = () => {
             >
               Chat
             </Button>
+            <Button
+              variant="link"
+              onClick={() => {
+                window.location.href = "/user";
+              }}
+              className="flex items-center justify-center gap-2 mr-4"
+            >
+              Users
+            </Button>
           </div>) : null}
 
           <div className="flex items-center">
@@ -118,7 +127,9 @@ const Navbar = () => {
                       />
                       <AvatarFallback>CN</AvatarFallback>
                     </Avatar>
-                    <Button variant="link">
+                    <Button variant="link" onClick={() => {
+                      window.location.href = "/user/" + userData.id;
+                    }}>
                       @{userData?.firstname ?? "No user data"}{" "}
                       {userData?.lastname ?? "No user data"}
                     </Button>

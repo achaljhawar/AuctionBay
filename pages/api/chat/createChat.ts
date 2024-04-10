@@ -1,7 +1,7 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "@/lib/supabase";
-
+import { parseJwt } from "@/lib/utils";
 type Data = {
   message?: string;
   data?: any;
@@ -15,10 +15,28 @@ export default async function handler(
     if (req.method !== "POST") {
       return res.status(405).json({ message: "Method Not Allowed" });
     }
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
-    const { firstID, secondID } = req.body;
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme !== 'Bearer' || !token) {
+      return res.status(401).json({ message: 'Invalid token format' });
+    }
 
-    // Check if firstID and secondID are provided
+    const decoded = parseJwt(token);
+    if (!decoded) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    const { id: firstID, exp } = decoded;
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (exp < currentTime) {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    const { secondID } = req.body;
+
     if (!firstID || !secondID) {
       return res.status(400).json({ message: "Missing required parameters" });
     }
@@ -66,8 +84,7 @@ export default async function handler(
           user_id_2: secondID,
         },
       ])
-      .single();
-
+      .select();
     if (error) {
       console.error("Error creating chatroom:", error);
       return res.status(500).json({ message: "Database Error" });

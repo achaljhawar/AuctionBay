@@ -6,13 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { User2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { redis } from '@/lib/redis';
-
+import LogoutBtn from "@/components/LogoutBtn";
 interface DashboardProps {}
 
 const Dashboard: React.FC<DashboardProps> = () => {
   const router = useRouter();
-  const [userData, setUserData] = useState<{ id: string; avatar_url: string; firstname: string; lastname: string; email: string } | null>(null);
+  const [userData, setUserData] = useState<{ id: string; avatar_url: string; firstname: string; lastname: string; email: string ; email_visibility: boolean} | null>(null);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -75,6 +74,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
           </CardContent>
           <CardFooter className="items-end justify-between text-xs text-secondary-foreground">
             Max avatar upload size: 1MB
+            <LogoutBtn />
           </CardFooter>
         </Card>
       </div>
@@ -82,4 +82,4 @@ const Dashboard: React.FC<DashboardProps> = () => {
   );
 };
 
-export default withAuth(Dashboard);
+export default Dashboard;
